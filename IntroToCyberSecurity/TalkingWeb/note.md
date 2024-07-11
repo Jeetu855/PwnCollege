@@ -74,3 +74,22 @@ Solution to this problem is encoding
 URL Encoding = % HEX HEX
 
 Hex is the ascii value, eg : %41 = 'A'
+Space = %20
+
+#### State
+
+Http is a stateless protocol, so how to we maintain state?
+Web application can be statefull, protocol can be stateless
+We can log in but any future request wont remember that we have already logged in or not because the protocol itself is stateless
+The protocol dosent keep track of clients state
+
+Solution : Cookies
+**Use HTTP headers to maintain state**
+The server sets a cookie in response with the header : "Set-Cookie"
+The client includes this cookie in future requests using the "Cookie" header
+
+What is before we even login, we set our cookie value to admin? This should work since the protocol is stateless.
+This is the security concern.
+We can change cookie to an unguessable session ID. This is more secure than using guessable cookies
+Its upto the web application on how to use cookies for state
+
