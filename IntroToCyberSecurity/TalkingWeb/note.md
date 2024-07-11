@@ -69,7 +69,7 @@ The spaces are delimiting start and end of **URI**
 
 Solution to this problem is encoding
 
-![alt text](image.png)
+![alt text](attachments/image.png)
 
 URL Encoding = % HEX HEX
 
