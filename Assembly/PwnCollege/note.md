@@ -318,7 +318,7 @@ Here are some useful instructions:
 
 ***All 'regX' can be replaced by a constant or memory location***
 
-f(x) = mx + b, where:
+#### f(x) = mx + b, where:
     m = rdi
     x = rsi
     b = rdx
@@ -363,7 +363,7 @@ For the instruction: ***div reg***, the following happens:
 ***rdx:rax means that rdx will be the upper 64-bits of the 128-bit dividend and rax will be the lower 64-bits of the 128-bit dividend.***
 **You must be careful about what is in rdx and rax before you call div.**
 
-Please compute the following:
+#### Please compute the following:
   speed = distance / time, where:
     distance = rdi
     time = rsi
@@ -421,27 +421,356 @@ Lower register bytes access is applicable to almost all registers.
 
 Using only one move instruction, please set the upper 8 bits of the ax register to 0x42.
 
+```asm
+.intel_syntax noprefix
 
+.global _start
 
+_start:
 
+      mov ah, 0x42
+```
 
+It turns out that using the div operator to compute the modulo operation is slow!
 
+We can use a math trick to optimize the modulo operator (%). Compilers use this trick a lot.
 
+***If we have "x % y", and y is a power of 2, such as 2^n, the result will be the lower n bits of x.***
+Therefore, we can use the lower register byte access to efficiently implement modulo!
 
+#### Using only the following instruction(s):
+  mov
 
+Please compute the following:
+  rax = rdi % 256
+  rbx = rsi % 65536
 
+```asm
+.intel_syntax noprefix
 
+.global _start
 
+_start:
+      
+      mov al, dil
+      mov bx, si
+```
 
+Shifting bits around in assembly is another interesting concept!
 
+x86 allows you to 'shift' bits around in a register.
 
+Take, for instance, al, the lowest 8 bits of rax.
 
+The value in al (in bits) is:
+  rax = 10001010
 
+If we shift once to the left using the shl instruction:
+  shl al, 1
 
+The new value is:
+  al = 00010100
 
+Everything shifted to the left and the highest bit fell off
+while a new 0 was added to the right side.
+You can use this to do special things to the bits you care about.
 
+Shifting has the nice side affect of doing quick multiplication (by 2)
+or division (by 2), and can also be used to compute modulo.
 
+Here are the important instructions:
 
+```asm
+  shl reg1, reg2       <=>     Shift reg1 left by the amount in reg2
+  shr reg1, reg2       <=>     Shift reg1 right by the amount in reg2
+```  
+***'reg2' can be replaced by a constant or memory location***
+
+#### Using only the following instructions:
+  mov, shr, shl
+
+Please perform the following:
+  Set rax to the 5th least significant byte of rdi.
+
+For example:
+  rdi = | B7 | B6 | B5 | B4 | B3 | B2 | B1 | B0 |
+  Set rax to the value of B4
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      shl rax, edi
+```
+***shl rax, edi is incorrect. The shl instruction does not allow the second operand to be a general-purpose register other than cl. The correct way to use a variable shift amount is by first moving the value into cl and then performing the shift operation.***
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      shr rdi, 32
+      shl rdi, 56
+      shr rdi, 56
+      mov rax, rdi
+```
+
+shr rdi, 32
+This instruction shifts the bits of rdi to the right by 32 positions. This operation discards the lower 32 bits of rdi, moving the 5th least significant byte into the position of the least significant byte.
+The original rdi value is right-shifted.
+The 5th least significant byte of rdi is moved to the position of the least significant byte
+
+shl rdi, 56
+This instruction shifts the bits of rdi to the left by 56 positions. This operation moves the byte that was previously in the position of the least significant byte (from the previous step) to the most significant byte position.
+
+The byte at the least significant position (which was the 5th least significant byte of the original rdi) is shifted to the most significant byte position.
+The remaining bits are shifted out, leaving only this byte in the least significant byte position.
+
+Example : 
+Initial value of rdi: 0x1234567890ABCDEF
+After shr rdi, 32: 0x90ABCDEF
+After shl rdi, 56: 0x9000000000000000
+After shr rdi, 56: 0x90
+
+For the sake of this example say registers only store 8 bits.
+
+The values in rax and rbx are:
+  rax = 10101010
+  rbx = 00110011
+
+If we were to perform a bitwise AND of rax and rbx using the
+"and rax, rbx" instruction, the result would be calculated by
+ANDing each bit pair 1 by 1 hence why it's called a bitwise
+logic.
+
+So from left to right:
+  1 AND 0 = 0
+  0 AND 0 = 0
+  1 AND 1 = 1
+  0 AND 1 = 0
+  ...
+
+Finally we combine the results together to get:
+  rax = 00100010
+
+#### Please perform the following:
+  rax = rdi AND rsi
+
+i.e. Set rax to the value of (rdi AND rsi)
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+     xor rax, rax # rax becomes 0
+     xor rax, rdi # rax now holds the value of rdi
+     and rax, rsi # performent and since rax = rdi, and we do rax & rsi
+
+```
+
+***To zero out any register, xor it by itself***
+
+***To transfer a value from one register to other, without using exchange***
+
+```asm
+xor rax, rax
+xor rax, rdi
+```
+This writes the value of rdi into rax
+
+#### Using only the following instructions:
+  and, or, xor
+
+Implement the following logic:
+  if x is even then
+    y = 1
+  else
+    y = 0
+
+where:
+  x = rdi
+  y = rax
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      xor rax, rax
+      and rdi, 1
+      xor rdi, 1
+      xor rax, rdi
+```
+
+In x86 we can access the thing at a memory location, called dereferencing, like so:
+  mov rax, [some_address]        <=>     Moves the thing at 'some_address' into rax
+
+This also works with things in registers:
+  mov rax, [rdi]         <=>     Moves the thing stored at the address of what rdi holds to rax
+
+This works the same for writing to memory:
+  mov [rax], rdi         <=>     Moves rdi to the address of what rax holds.
+
+So if rax was 0xdeadbeef, then rdi would get stored at the address 0xc0debabe:
+  [0xc0debabe] = rdi
+
+Note: memory is linear, and in x86_64, it goes from 0 - 0xffffffffffffffff (yes, huge).
+
+#### Please perform the following:
+  Place the value stored at 0x404000 into rax
+
+Make sure the value in rax is the original value stored at 0x404000.
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov rax, [0x404000]
+```
+
+#### Please perform the following:
+  Place the value stored in rax to 0x404000
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov [0x404000], rax
+```
+
+#### Please perform the following:
+  Place the value stored at 0x404000 into rax
+  Increment the value stored at the address 0x404000 by 0x1337
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov rax, [0x404000]
+      add [0x404000], 0x1337
+```
+**This gives error : Error: ambiguous operand size for add**
+***The error occurs because the assembler cannot determine the size of the operands. To fix this, you need to specify the size of the operands explicitly.***
+we can fix this by using byte, word, dword, or qword to indicate the size. For example:
+
+byte for 8-bit operands
+word for 16-bit operands
+dword for 32-bit operands
+qword for 64-bit operands
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov rax, [0x404000]
+      add qword ptr [0x404000], 0x1337
+```
+
+Recall that registers in x86_64 are 64 bits wide, meaning they can store 64 bits.
+
+Similarly, each memory location can be treated as a 64 bit value.
+
+We refer to something that is 64 bits (8 bytes) as a quad word.
+
+Here is the breakdown of the names of memory sizes:
+  Quad Word   = 8 Bytes = 64 bits
+  Double Word = 4 bytes = 32 bits
+  Word        = 2 bytes = 16 bits
+  Byte        = 1 byte  = 8 bits
+
+In x86_64, you can access each of these sizes when dereferencing an address, just like using
+bigger or smaller register accesses:
+
+  mov al, [address]        <=>        moves the least significant byte from address to rax
+  mov ax, [address]        <=>        moves the least significant word from address to rax
+  mov eax, [address]       <=>        moves the least significant double word from address to rax
+  mov rax, [address]       <=>        moves the full quad word from address to rax
+
+Remember that moving into al does not fully clear the upper bytes.
+
+#### Please perform the following:
+  Set rax to the byte at 0x404000
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      xor rax, rax
+      mov al, [0x404000]
+```
+
+#### Please perform the following:
+  Set rax to the byte at 0x404000
+  Set rbx to the word at 0x404000
+  Set rcx to the double word at 0x404000
+  Set rdx to the quad word at 0x404000
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov al, [0x404000]
+      mov bx, [0x404000]
+      mov ecx, [0x404000]
+      mov rdx, [0x404000]
+```
+
+#### It is worth noting, as you may have noticed, that values are stored in reverse order of how we
+represent them.
+
+As an example, say:
+  [0x1330] = 0x00000000deadc0de
+
+If you examined how it actually looked in memory, you would see:
+  [0x1330] = 0xde
+  [0x1331] = 0xc0
+  [0x1332] = 0xad
+  [0x1333] = 0xde
+  [0x1334] = 0x00
+  [0x1335] = 0x00
+  [0x1336] = 0x00
+  [0x1337] = 0x00
+
+This format of storing things in 'reverse' is intentional in x86, and its called "Little Endian".
+
+For this challenge we will give you two addresses created dynamically each run.
+
+The first address will be placed in rdi.
+The second will be placed in rsi.
+
+Using the earlier mentioned info, perform the following:
+  Set [rdi] = 0xdeadbeef00001337
+  Set [rsi] = 0xc0ffee0000
+
+***Hint: it may require some tricks to assign a big constant to a dereferenced register.Try setting a register to the constant value then assigning that register to the dereferenced register.***
 
 
 
