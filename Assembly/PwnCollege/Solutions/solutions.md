@@ -177,3 +177,67 @@ _start:
       mov ecx, [0x404000]
       mov rdx, [0x404000]
 ```
+
+Level 17:
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov rax, 0xdeadbeef00001337
+      mov [rdi], rax 
+      mov rax, 0xc0ffee0000 
+      mov dword ptr [rsi], eax # Move the lower 32 bits of rax to the memory location pointed by rsi
+      #Move the higher 32 bits of rax to the memory location pointed by rsi+4
+      shr rax, 32
+      mov dword ptr [rsi + 4], eax
+```
+
+Level 18:
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov rax, [rdi]
+      mov rdx, [rdi+8] # the 8th byte from the the base of rdi
+      add rax, rdx
+      mov [rsi], rax
+```
+
+
+Level 19:
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      pop rax
+      sub rax, rdi
+      push rax
+```
+
+Level 20:
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      push rdi
+      push rsi
+      pop rdi
+      pop rsi
+
+```
+

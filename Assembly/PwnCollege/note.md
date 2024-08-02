@@ -772,6 +772,95 @@ Using the earlier mentioned info, perform the following:
 
 ***Hint: it may require some tricks to assign a big constant to a dereferenced register.Try setting a register to the constant value then assigning that register to the dereferenced register.***
 
+***When we move a 32-bit value into a 64-bit register using an instruction like mov eax, value, the upper 32 bits of the 64-bit register are automatically zeroed out. This means that if we perform mov eax, 0x12345678 while rax previously held a 64-bit value, rax will now hold 0x0000000012345678.***
+
+#### Say we access the quad word at 0x1337:
+  [0x1337] = 0x00000000deadbeef
+
+The real way memory is layed out is byte by byte, little endian:
+  [0x1337] = 0xef
+  [0x1337 + 1] = 0xbe
+  [0x1337 + 2] = 0xad
+  ...
+  [0x1337 + 7] = 0x00
+
+What does this do for us?
+
+**Well, it means that we can access things next to each other using offsets(offsets start at 0)**
+similar to what was shown above.
+
+Perform the following:
+  Load two consecutive quad words from the address stored in rdi
+  Calculate the sum of the previous steps quad words.
+  Store the sum at the address in rsi
+
+The instruction mov rsi, [rdi+8] copies 8 bytes (a 64-bit value) from memory into the rsi register. 
+***The size of the move operation is determined by the size of the destination register (rsi in this case), which is 64 bits.***
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      mov rax, [rdi]
+      mov rdx, [rdi+8] # the 8th byte from the the base of rdi
+      add rax, rdx
+      mov [rsi], rax
+```
+
+#### The stack is a region of memory that can store values for later.
+
+The memory region that dynamically expands and shrinks.
+
+To store a value on the stack we use the push instruction, and to retrieve a value we use pop.
+
+The stack is a last in first out (LIFO) memory structure, and this means
+the last value pushed in the first value popped.
+
+**On x86, the pop instruction will take the value from the top of the stack and put it into a register.**
+**Similarly, the push instruction will take the value in a register and push it onto the top of the stack.**
+
+Using these instructions, take the top value of the stack, subtract rdi from it, then put it back.
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      pop rax
+      sub rax, rdi
+      push rax
+```
+#### In this level we are going to explore the last in first out (LIFO) property of the stack.
+
+Using only following instructions:
+  push, pop
+
+Swap values in rdi and rsi.
+i.e.
+If to start rdi = 2 and rsi = 5
+Then to end rdi = 5 and rsi = 2
+
+```asm
+.intel_syntax noprefix
+
+.global _start
+
+_start:
+      
+      push rdi
+      push rsi
+      pop rdi
+      pop rsi
+```
+
+
+
+
 
 
 
